@@ -1,8 +1,16 @@
-document.addEventListener("DOMContentLoaded", function () {
-  // initialize an API client object
-  const chatbotApi = new Gadget();
+// Import dependencies
+import { ChatUI } from './components/ChatUI.js';
+import { MessageHandler } from './components/MessageHandler.js';
 
-  // dom elements for chatbot
+document.addEventListener("DOMContentLoaded", function () {
+  // Initialize an API client object
+  const chatbotApi = new Gadget();
+  
+  // Create UI and message handler
+  const chatUI = new ChatUI();
+  const messageHandler = new MessageHandler(chatbotApi, chatUI);
+  
+  // Get DOM elements for chatbot
   const chatbotWindow = document.getElementById("chatbot-window");
   const chat = document.getElementById("chat");
   const chatForm = document.getElementById("chat-form");
@@ -11,38 +19,47 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatbotToggle = document.getElementById("chatbot-toggle");
   const chatbotOpenToggle = document.getElementById("chatbot-open-toggle");
   const chatbotCloseToggle = document.getElementById("chatbot-close-toggle");
-
-  // fired when the chat form is submitted
+  
+  // Add welcome message
+  setTimeout(() => {
+    const welcomeMessage = document.createElement("p");
+    welcomeMessage.classList.add("bot");
+    welcomeMessage.textContent = "Hi there! How can I help you today?";
+    chat.appendChild(welcomeMessage);
+  }, 500);
+  
+  // Fired when the chat form is submitted
   chatForm.addEventListener("submit", async function (event) {
     event.preventDefault();
-    // disable input and button
+    
+    // Disable input and button
     chatInput.toggleAttribute("disabled");
     chatButton.toggleAttribute("disabled");
-
-    // get user-inputted message
+    
+    // Get user-inputted message
     const chatInputValue = chatInput.value;
     chatInput.value = "";
-
-    // add input to chat window and disable input
+    
+    // Add input to chat window
     const userInput = document.createTextNode(chatInputValue);
     const userChatBubble = document.createElement("span");
     userChatBubble.classList.add("user");
     userChatBubble.appendChild(userInput);
     chat.appendChild(userChatBubble);
     chat.appendChild(document.createElement("br"));
-
-    // add DOM elements for response
+    
+    // Add DOM elements for response
     const chatbotResponse = document.createElement("p");
     chatbotResponse.classList.add("bot");
     chat.appendChild(chatbotResponse);
-
-    // add DOM elements for "thinking" indicator
+    
+    // Add DOM elements for "thinking" indicator
     const chatbotThinking = document.createElement("p");
     const chatbotThinkingText = document.createTextNode("Thinking...");
     chatbotThinking.appendChild(chatbotThinkingText);
     chat.appendChild(chatbotThinking);
-
-    // call Gadget /chat HTTP route with stream option
+    
+    // Call Gadget /chat HTTP route with stream option
     const response = await chatbotApi.fetch("/chat", {
       method: "POST",
       headers: {
@@ -53,15 +70,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }),
       stream: true,
     });
-
-    // read from the returned stream
+    
+    // Read from the returned stream
     const decodedStreamReader = response.body
       .pipeThrough(new TextDecoderStream())
       .getReader();
-
-    // handle any stream errors
+    
+    // Handle any stream errors
     decodedStreamReader.closed.catch((error) => {
-      // display stream error
+      // Display stream error
       const chatbotError = document.createElement("p");
       chatbotError.classList.add("error");
       const chatbotErrorText = document.createTextNode(
@@ -69,34 +86,45 @@ document.addEventListener("DOMContentLoaded", function () {
       );
       chatbotError.appendChild(chatbotErrorText);
       chat.appendChild(chatbotError);
-      // also add error to console
+      // Also add error to console
       console.error(error.toString());
     });
-
-    // parse the stream data
+    
+    // Parse the stream data
     let replyText = "";
     while (true) {
       const { value, done } = await decodedStreamReader.read();
-
-      // stop reading the stream
+      
+      // Stop reading the stream
       if (done) {
         chatInput.toggleAttribute("disabled");
         chatButton.toggleAttribute("disabled");
         chat.removeChild(chatbotThinking);
         break;
       }
-
-      // append the stream data to the response text
+      
+      // Append the stream data to the response text
       replyText += value;
-      // use DOMPurify to sanitize the response before adding to the DOM
+      // Use DOMPurify to sanitize the response before adding to the DOM
       chatbotResponse.innerHTML = DOMPurify.sanitize(replyText);
     }
   });
-
+  
   chatbotToggle.addEventListener("click", function () {
-    // toggle visibility of chatbot window
+    // Toggle visibility of chatbot window
     chatbotWindow.classList.toggle("visible");
     chatbotOpenToggle.classList.toggle("hidden");
     chatbotCloseToggle.classList.toggle("hidden");
   });
+  
+  // Add voice input functionality if browser supports it
+  if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+    const voiceButton = document.querySelector('.voice-input');
+    
+    if (voiceButton) {
+      voiceButton.addEventListener('click', function() {
+        chatUI.toggleVoiceInput();
+      });
+    }
+  }
 });

@@ -1,0 +1,21 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "34f1d70a5172df09e72ce40b0eddcebd"
+application_url = "https://edna-fork--development.gadget.app/api/shopify/install-or-render"
+embedded = true
+name = "edna-fork-development"
+handle = "edna-fork-development"
+
+[webhooks]
+api_version = "2025-01"
+
+[auth]
+redirect_urls = [
+  "https://edna-fork--development.gadget.app/api/connections/auth/shopify/callback"
+]
+
+[pos]
+embedded = false
+
+[build]
+include_config_on_deploy = true
