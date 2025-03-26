@@ -1,0 +1,44 @@
+{% comment %} bundle-display.liquid {% endcomment %}
+<script src="https://edna-fork--development.gadget.app/api/client/web.min.js" defer="defer"></script>
+<script src="{{ 'bundle-display.js' | asset_url }}" defer="defer"></script>
+{{ 'bundle-display.css' | asset_url | stylesheet_tag }}
+
+<div id="bundle-display-container" data-product-id="{{ product.id | json }}" data-shop-domain="{{ shop.permanent_domain | json }}">
+  <h3 class="bundle-display-header">Save When You Bundle</h3>
+  <div class="bundle-discount-squares-container">
+    <div class="bundle-loading">Loading bundle information...</div>
+  </div>
+  <div class="bundle-explanation hidden">
+    Add items to your bundle and save the percentages shown above on each additional item!
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Bundle Discounts",
+  "target": "section",
+  "templates": ["product"],
+  "settings": [
+    {
+      "type": "select",
+      "id": "placement",
+      "label": "Placement",
+      "options": [
+        { "value": "before-price", "label": "Before Price" },
+        { "value": "after-price", "label": "After Price" },
+        { "value": "before-add-to-cart", "label": "Before Add to Cart Button" },
+        { "value": "after-add-to-cart", "label": "After Add to Cart Button" }
+      ],
+      "default": "before-add-to-cart"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "Show title",
+      "default": true
+    }
+  ],
+  "stylesheet": "bundle-display.css",
+  "javascript": "bundle-display.js"
+}
+{% endschema %}
