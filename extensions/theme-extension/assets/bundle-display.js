@@ -31,8 +31,9 @@ async function fetchBundleConfig() {
         },
         // Add shop domain as a query parameter
         query: {
-          shop: shopDomain
-        }
+            shop: shopDomain,
+            productId: productId
+          }
       });
       
       if (!response.ok) {
@@ -81,10 +82,13 @@ async function fetchBundleConfig() {
       // Create HTML for each discount square
       discounts.forEach((discount, index) => {
         if (discount > 0) {
-          // Calculate intensity for background color
-          const intensityFactor = Math.min(discount / 100, 0.9);
-          const backgroundColor = `rgba(0, 0, 0, ${intensityFactor})`;
-          const textColor = discount > 40 ? '#ffffff' : '#000000';
+
+          const baseIntensity = Math.sqrt(discount / 100) * 0.8 + 0.2; // Minimum intensity of 0.2
+          const intensityFactor = Math.min(baseIntensity, 0.95);
+          
+          // Use the same green but with adjusted intensity
+          const backgroundColor = `rgba(50, 175, 0, ${intensityFactor})`;
+          const textColor = '#ffffff';
           
           // Create square element
           const square = document.createElement("div");

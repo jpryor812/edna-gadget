@@ -3,7 +3,7 @@
 <script src="{{ 'bundle-display.js' | asset_url }}" defer="defer"></script>
 {{ 'bundle-display.css' | asset_url | stylesheet_tag }}
 
-<div id="bundle-display-container" data-product-id="{{ product.id | json }}" data-shop-domain="{{ shop.permanent_domain | json }}">
+<div id="bundle-display-container" data-product-id="{{ product.id }}" data-shop-domain="{{ shop.permanent_domain }}">
   <h3 class="bundle-display-header">Save When You Bundle</h3>
   <div class="bundle-discount-squares-container">
     <div class="bundle-loading">Loading bundle information...</div>

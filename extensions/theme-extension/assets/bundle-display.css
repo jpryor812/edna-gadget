@@ -18,7 +18,7 @@
   .bundle-discount-squares-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 48px;
     align-items: center;
     margin-bottom: 10px;
   }
