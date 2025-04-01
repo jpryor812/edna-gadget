@@ -1,53 +1,71 @@
 <script src="https://edna-fork--development.gadget.app/api/client/web.min.js" defer="defer"></script>
 <script src="{{ 'purify.min.js' | asset_url }}" defer="defer"></script>
-<script src="{{ 'chatbot.js' | asset_url }}" defer="defer"></script>
+{{ 'chatbot.js' | asset_url | script_tag }}
 {{ 'chatbot.css' | asset_url | stylesheet_tag }}
 
-<div id="chatbot-toggle" style="bottom: {{ block.settings.toggle_bottom }}; top: {{ block.settings.toggle_top }}; right: {{ block.settings.toggle_right }}; left: {{ block.settings.toggle_left }}">
-  <img id="chatbot-open-toggle" src="{{ "gizmo.png" | asset_img_url: 'large' }}" height="50" width="50" loading="lazy">
-  <img id="chatbot-close-toggle" class="hidden" src="{{ "close.png" | asset_img_url: 'large' }}" height="35" width="35" loading="eager">
-</div>
+<!-- Button in the section -->
+<section class="edna-button-section">
+  <div id="chatbot-toggle" class="inline-button" style="background-color: {{ section.settings.button_background }};">
+    <div class="button-content">
+      <div class="button-icon">
+        {% if section.settings.button_icon %}
+          <img id="chatbot-open-toggle" src="{{ section.settings.button_icon | img_url: 'small' }}" alt="Edna" loading="lazy">
+        {% else %}
+          <img id="chatbot-open-toggle" src="{{ 'edna_logo.png' | asset_url }}" alt="Edna" loading="lazy">
+        {% endif %}
+      </div>
+      <span class="button-text">{{ section.settings.button_text }}</span>
+    </div>
+  </div>
+</section>
+
+<!-- Chat window (will be moved to body by JavaScript) -->
 <div id="chatbot-window">
+  <div id="chat-header">
+    <h2>Edna</h2>
+    <img id="chatbot-close-toggle" src="{{ 'close.png' | asset_url }}" loading="eager">
+  </div>
   <div id="chat">
-    <p>
-      {{ "chatbot.welcome.label" | t }}
-    </p>
+    <!-- Welcome message will be added by JS -->
   </div>
   <form id="chat-form">
-    <input name="chatInput" autocomplete="off"/>
+    <input name="chatInput" autocomplete="off" placeholder="{{ section.settings.input_placeholder }}"/>
     <button name="chatButton" type="submit">Send</button>
   </form>
 </div>
 
+
 {% schema %}
 {
-  "name": "Gadget chatbot",
-  "target": "body",
+  "name": "Shop with Edna",
+  "target": "section",
   "settings": [
     {
       "type": "text",
-      "label": "bottom",
-      "id": "toggle_bottom",
-      "default": "10px"
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Shop with Edna"
+    },
+    {
+      "type": "image_picker",
+      "id": "button_icon",
+      "label": "Button icon (optional)"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Button background color",
+      "default": "#ffffff"
     },
     {
       "type": "text",
-      "label": "top",
-      "id": "toggle_top",
-      "default": "auto"
-    },
-    {
-      "type": "text",
-      "label": "left",
-      "id": "toggle_left",
-      "default": "auto"
-    },
-    {
-      "type": "text",
-      "label": "right",
-      "id": "toggle_right",
-      "default": "10px"
+      "id": "input_placeholder",
+      "label": "Chat input placeholder",
+      "default": "Ask me something..."
     }
-  ]
+  ],
+  "stylesheet": "chatbot.css",
+  "javascript": "chatbot.js"
 }
 {% endschema %}
+
