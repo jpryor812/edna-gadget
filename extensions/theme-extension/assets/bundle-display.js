@@ -1,51 +1,14 @@
-let bundleDisplayGadgetApi = null;
+// bundle-display.js - Modified to use Gadget POST-bundle-cart API
 
-// Function to ensure Gadget client is available
-function ensureGadgetClient() {
-    return new Promise((resolve) => {
-        // If gadgetApi is already set, resolve immediately
-        if (gadgetApi) {
-            return resolve(gadgetApi);
-        }
-        
-        // Check if Gadget is available in global scope
-        if (window.Gadget) {
-            gadgetApi = new window.Gadget({
-                environment: "development"
-            });
-            return resolve(gadgetApi);
-        }
-        
-        // Wait for Gadget to be available
-        const checkInterval = setInterval(() => {
-            if (window.Gadget) {
-                clearInterval(checkInterval);
-                gadgetApi = new window.Gadget({
-                    environment: "development"
-                });
-                resolve(gadgetApi);
-            }
-        }, 100);
-        
-        // Timeout after 10 seconds
-        setTimeout(() => {
-            clearInterval(checkInterval);
-            console.error("Gadget client failed to load");
-            resolve(null);
-        }, 10000);
-    });
-}
-
-// Make the callback async so you can use await
-document.addEventListener("DOMContentLoaded", async function() {
+document.addEventListener("DOMContentLoaded", function() {
     // Get the bundle container
     const bundleContainer = document.getElementById('bundle-display-container');
     if (!bundleContainer) return;
-    
+  
     // Get current product details from data attributes
     const currentProductId = bundleContainer.getAttribute('data-product-id');
     const shopDomain = bundleContainer.getAttribute('data-shop-domain');
-    
+  
     if (!currentProductId || !shopDomain) {
       console.warn('Bundle display: Missing product ID or shop domain');
       const loadingElement = bundleContainer.querySelector('.bundle-loading');
@@ -55,17 +18,7 @@ document.addEventListener("DOMContentLoaded", async function() {
       return;
     }
 
-    // Now you can use await here
-    await ensureGadgetClient();
-    
-    if (!gadgetApi) {
-        console.error("Failed to initialize Gadget client");
-        const loadingElement = bundleContainer.querySelector('.bundle-loading');
-        if (loadingElement) {
-            loadingElement.innerHTML = 'Could not connect to bundle service';
-        }
-        return;
-    }
+    gadgetApi = new Gadget();
     
     // Start loading all the necessary data
     initializeBundleDisplay();
