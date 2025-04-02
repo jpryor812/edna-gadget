@@ -25,7 +25,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatButton = chatForm.elements.chatButton;
   const chatbotToggle = document.getElementById("chatbot-toggle");
   const chatbotOpenToggle = document.getElementById("chatbot-open-toggle");
-  const chatbotCloseToggle = document.getElementById("chatbot-close-toggle");
+  const chatbotCloseToggle = document.getElementById("chatbot-close-toggle"); // This is missing
+  const chatbotWindowClose = document.getElementById("chatbot-window-close");
 
   // IMPORTANT: Move the chatbot window to the document body
   // This ensures it can appear in front of everything
@@ -367,27 +368,43 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   chatbotToggle.addEventListener("click", function () {
-    console.log("Chatbot toggle clicked");
-    
-    // Force the chat window to be at the body level again
-    if (chatbotWindow.parentElement !== document.body) {
-      document.body.appendChild(chatbotWindow);
-    }
-    
     // toggle visibility of chatbot window
     chatbotWindow.classList.toggle("visible");
+    
+    // Toggle visibility of open/close buttons
+    chatbotOpenToggle.classList.toggle("hidden");
+    chatbotCloseToggle.classList.toggle("hidden");
     
     // Display welcome message when chat is first opened
     if (chatbotWindow.classList.contains("visible") && 
         chat.querySelectorAll('.bot, .bot-welcome-message').length === 0) {
       displayWelcomeMessage();
     }
-  });  
-  
-  // Add separate event listener for the close button
-  document.getElementById("chatbot-close-toggle").addEventListener("click", function() {
-    chatbotWindow.classList.remove("visible");
   });
   
+  // Add separate event listener for the close button
+  chatbotCloseToggle.addEventListener("click", function() {
+    chatbotWindow.classList.remove("visible");
+    chatbotOpenToggle.classList.remove("hidden");
+    chatbotCloseToggle.classList.add("hidden");
+  });
+
+  if (chatbotWindowClose) {
+    chatbotWindowClose.addEventListener("click", function() {
+      // Hide the chat window but don't clear messages
+      chatbotWindow.classList.remove("visible");
+      
+      // Make sure the open toggle is visible and close toggle is hidden
+      chatbotOpenToggle.classList.remove("hidden");
+      chatbotCloseToggle.classList.add("hidden");
+    });
+  }
   
+  if (chatbotCloseToggle) {  // Add this check
+    chatbotCloseToggle.addEventListener("click", function() {
+      chatbotWindow.classList.remove("visible");
+      chatbotOpenToggle.classList.remove("hidden");
+      chatbotCloseToggle.classList.add("hidden");
+    });
+  }
 });

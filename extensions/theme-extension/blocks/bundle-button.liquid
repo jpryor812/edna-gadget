@@ -1,0 +1,53 @@
+<div class="bundle-button-container">
+  <button id="build-bundle-button" class="bundle-button" onclick="scrollToBundle()">Build a Bundle</button>
+</div>
+
+<style>
+  .bundle-button-container {
+    margin-top: 12px;
+  }
+  
+  .bundle-button {
+    background-color: #f9f9f9;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-family: 'baskervville', serif;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex-end;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-weight: 600;
+  }
+  
+  .bundle-button:hover {
+    background-color: #f0f0f0;
+    border-color: #d0d0d0;
+  }
+  
+  .bundle-button:before {
+    content: "🎁";
+    margin-right: 8px;
+  }
+</style>
+
+<script>
+  function scrollToBundle() {
+    const bundleSection = document.getElementById('bundle-display-container');
+    if (bundleSection) {
+      bundleSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+</script>
+
+{% schema %}
+{
+  "name": "Bundle Button",
+  "target": "section",
+  "templates": ["product"],
+  "settings": []
+}
+{% endschema %}

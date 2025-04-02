@@ -1,6 +1,43 @@
-// bundle-display.js - Modified to display more products
+let bundleDisplayGadgetApi = null;
 
-document.addEventListener("DOMContentLoaded", function() {
+// Function to ensure Gadget client is available
+function ensureGadgetClient() {
+    return new Promise((resolve) => {
+        // If gadgetApi is already set, resolve immediately
+        if (gadgetApi) {
+            return resolve(gadgetApi);
+        }
+        
+        // Check if Gadget is available in global scope
+        if (window.Gadget) {
+            gadgetApi = new window.Gadget({
+                environment: "development"
+            });
+            return resolve(gadgetApi);
+        }
+        
+        // Wait for Gadget to be available
+        const checkInterval = setInterval(() => {
+            if (window.Gadget) {
+                clearInterval(checkInterval);
+                gadgetApi = new window.Gadget({
+                    environment: "development"
+                });
+                resolve(gadgetApi);
+            }
+        }, 100);
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            console.error("Gadget client failed to load");
+            resolve(null);
+        }, 10000);
+    });
+}
+
+// Make the callback async so you can use await
+document.addEventListener("DOMContentLoaded", async function() {
     // Get the bundle container
     const bundleContainer = document.getElementById('bundle-display-container');
     if (!bundleContainer) return;
@@ -17,9 +54,18 @@ document.addEventListener("DOMContentLoaded", function() {
       }
       return;
     }
+
+    // Now you can use await here
+    await ensureGadgetClient();
     
-    // Initialize Gadget API client
-    const gadgetApi = new Gadget();
+    if (!gadgetApi) {
+        console.error("Failed to initialize Gadget client");
+        const loadingElement = bundleContainer.querySelector('.bundle-loading');
+        if (loadingElement) {
+            loadingElement.innerHTML = 'Could not connect to bundle service';
+        }
+        return;
+    }
     
     // Start loading all the necessary data
     initializeBundleDisplay();
@@ -215,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function() {
           image: productImage,
           variantId: currentVariantId 
         }, 
-        0, 
+        1, // Changed from 0 to 1 for position - main product is position 1
         'Main Item',
         bundleConfig
       );
@@ -227,13 +273,13 @@ document.addEventListener("DOMContentLoaded", function() {
       
       // Additional slots based on available discounts
       let slotCount = 0;
-      for (let i = 1; i <= 5; i++) {
-        const discountKey = `Item${i}Discount`;
+      for (let i = 2; i <= 6; i++) { // Changed from 1-5 to 2-6 (position 1 is main product)
+        const discountKey = `Item${i-1}Discount`; // Adjusted index to match your config keys
         const discountPercent = bundleConfig[discountKey] || 0;
         
         if (discountPercent > 0) {
           slotCount++;
-          const slotTitle = `Item ${i}: ${discountPercent}% Off`;
+          const slotTitle = `Item ${i-1}: ${discountPercent}% Off`;
           const slot = createEmptySlot(i, slotTitle, discountPercent);
           
           // Add plus sign before each slot except the first
@@ -359,8 +405,8 @@ document.addEventListener("DOMContentLoaded", function() {
       titleDiv.className = 'bundle-slot-title';
       
       // Add discount indicator to title if applicable
-      if (slotIndex > 0) {
-        const discountKey = `Item${slotIndex}Discount`;
+      if (slotIndex > 1) { // Changed from slotIndex > 0 to slotIndex > 1
+        const discountKey = `Item${slotIndex-1}Discount`; // Adjusted index
         const discountPercent = bundleConfig[discountKey] || 0;
         if (discountPercent > 0) {
           titleDiv.classList.add('has-discount');
@@ -397,7 +443,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         
         // Add remove button (not for main product)
-        if (slotIndex > 0) {
+        if (slotIndex > 1) { // Changed from slotIndex > 0 to slotIndex > 1
           const removeBtn = document.createElement('button');
           removeBtn.className = 'bundle-remove-btn';
           removeBtn.textContent = '×';
@@ -422,8 +468,8 @@ document.addEventListener("DOMContentLoaded", function() {
         price.className = 'bundle-slot-price';
         
         // Apply discount if applicable
-        if (slotIndex > 0) {
-          const discountKey = `Item${slotIndex}Discount`;
+        if (slotIndex > 1) { // Changed from slotIndex > 0 to slotIndex > 1
+          const discountKey = `Item${slotIndex-1}Discount`; // Adjusted index
           const discountPercent = bundleConfig[discountKey] || 0;
           
           if (discountPercent > 0) {
@@ -579,7 +625,11 @@ document.addEventListener("DOMContentLoaded", function() {
       const button = document.createElement('button');
       button.className = 'bundle-add-to-cart-btn';
       button.textContent = `Add to Cart • $${mainProductPrice.toFixed(2)}`;
-      button.setAttribute('data-bundle-items', JSON.stringify([getMainProductVariantId()]));
+      button.setAttribute('data-bundle-items', JSON.stringify([{
+        variantId: getMainProductVariantId(),
+        position: 1,
+        quantity: 1
+      }]));
       button.addEventListener('click', handleAddToCart);
       
       summary.appendChild(button);
@@ -657,7 +707,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const slotTitle = slot.querySelector('.bundle-slot-title').textContent;
       
       // Replace with empty slot
-      const emptySlot = createEmptySlot(slotIndex, slotTitle, bundleConfig[`Item${slotIndex}Discount`] || 0);
+      const emptySlot = createEmptySlot(slotIndex, slotTitle, bundleConfig[`Item${slotIndex-1}Discount`] || 0); // Adjusted index
       slot.parentNode.replaceChild(emptySlot, slot);
       
       // Update add button state
@@ -702,7 +752,7 @@ document.addEventListener("DOMContentLoaded", function() {
       // Calculate totals
       let originalTotal = 0;
       let bundleTotal = 0;
-      let variantIds = [];
+      let bundleItems = [];
       
       productSlots.forEach(slot => {
         // Skip empty slots
@@ -713,15 +763,19 @@ document.addEventListener("DOMContentLoaded", function() {
         const variantId = slot.getAttribute('data-variant-id');
         
         if (variantId) {
-          variantIds.push(variantId);
+          bundleItems.push({
+            variantId,
+            position: slotIndex,
+            quantity: 1
+          });
         }
         
         originalTotal += price;
         
         // Apply discount if applicable
-        if (slotIndex > 0) {
+        if (slotIndex > 1) { // Changed from slotIndex > 0 to slotIndex > 1
           const bundleConfig = getBundleConfigFromDOM();
-          const discountKey = `Item${slotIndex}Discount`;
+          const discountKey = `Item${slotIndex-1}Discount`; // Adjusted index
           const discountPercent = bundleConfig[discountKey] || 0;
           
           if (discountPercent > 0) {
@@ -746,9 +800,8 @@ document.addEventListener("DOMContentLoaded", function() {
       // Update add to cart button
       const addButton = summary.querySelector('.bundle-add-to-cart-btn');
       if (addButton) {
-        const itemCount = variantIds.length;
         addButton.textContent = `Add to Cart • $${bundleTotal.toFixed(2)}`;
-        addButton.setAttribute('data-bundle-items', JSON.stringify(variantIds));
+        addButton.setAttribute('data-bundle-items', JSON.stringify(bundleItems));
       }
     }
     
@@ -761,12 +814,12 @@ document.addEventListener("DOMContentLoaded", function() {
       
       slots.forEach(slot => {
         const slotIndex = parseInt(slot.getAttribute('data-slot-index') || 0);
-        if (slotIndex > 0) {
+        if (slotIndex > 1) { // Changed from slotIndex > 0 to slotIndex > 1
           const title = slot.querySelector('.bundle-slot-title').textContent;
           // Extract discount percentage from title (e.g., "Item 1: 20% Off")
           const match = title.match(/(\d+)%/);
           if (match && match[1]) {
-            config[`Item${slotIndex}Discount`] = parseInt(match[1]);
+            config[`Item${slotIndex-1}Discount`] = parseInt(match[1]); // Adjusted index
           }
         }
       });
@@ -790,36 +843,42 @@ document.addEventListener("DOMContentLoaded", function() {
       
       const button = event.target;
       const originalText = button.textContent;
-      button.textContent = "Adding...";
+      button.textContent = "Creating bundle...";
       button.disabled = true;
       
       try {
-        // Get the selected item IDs
+        // Get the selected bundle items
         const bundleItems = JSON.parse(button.getAttribute('data-bundle-items') || '[]');
         
         if (bundleItems.length === 0) {
           throw new Error("No items in bundle");
         }
         
-        // Add items to cart
-        const formData = {
-          items: bundleItems.map(variantId => ({
-            id: variantId,
-            quantity: 1
-          }))
-        };
+        console.log("Adding bundle items:", bundleItems);
         
-        // Use Shopify's Cart API to add items
-        const response = await fetch('/cart/add.js', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
+        // Use the Gadget bundle-cart API instead of direct Shopify cart API
+        const response = await gadgetApi.fetch('/bundle-cart', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Shop-Domain': shopDomain
+            },
+            body: JSON.stringify({ 
+              bundleItems,
+              shop: shopDomain // Include shop explicitly in request body
+            })
+          });
         
         if (!response.ok) {
-          throw new Error('Failed to add items to cart');
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(errorData.error || `Failed to add bundle: ${response.status}`);
+        }
+        
+        // Parse response
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || "Failed to create bundle cart");
         }
         
         // Show success message
@@ -828,7 +887,22 @@ document.addEventListener("DOMContentLoaded", function() {
         // Create success message
         const successMessage = document.createElement('div');
         successMessage.className = 'bundle-success-message';
-        successMessage.innerHTML = 'Your bundle has been added to the cart! <a href="/cart">View Cart</a>';
+        
+        if (result.draftOrder && result.draftOrder.checkoutUrl) {
+            // Show success message with checkout link
+            successMessage.innerHTML = `Your bundle is ready! <a href="${result.draftOrder.checkoutUrl}" class="bundle-checkout-link">Checkout Now</a>`;
+            
+            // Optionally, add a button that redirects immediately
+            const checkoutButton = document.createElement('button');
+            checkoutButton.className = 'bundle-checkout-btn';
+            checkoutButton.textContent = 'Proceed to Checkout';
+            checkoutButton.addEventListener('click', () => {
+              window.location.href = result.draftOrder.checkoutUrl;
+            });
+            successMessage.appendChild(checkoutButton);
+          } else {
+            successMessage.innerHTML = 'Your bundle has been created! Check your email for checkout instructions.';
+          }
         
         // Add success message if not already present
         if (!bundleContainer.querySelector('.bundle-success-message')) {
@@ -841,15 +915,37 @@ document.addEventListener("DOMContentLoaded", function() {
           button.disabled = false;
         }, 2000);
         
-        // Open cart drawer if available
-        if (typeof window.openCartDrawer === 'function') {
-          window.openCartDrawer();
-        }
-        
       } catch (error) {
         console.error("Error adding bundle to cart:", error);
         button.textContent = "Error - Try Again";
         button.disabled = false;
+        
+        // Show error message to user
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'bundle-error-message';
+        errorMessage.textContent = error.message || "Failed to add bundle to cart. Please try again.";
+        
+        // Remove existing error messages
+        const existingError = bundleContainer.querySelector('.bundle-error-message');
+        if (existingError) {
+          bundleContainer.removeChild(existingError);
+        }
+        
+        // Add new error message
+        bundleContainer.appendChild(errorMessage);
+        
+        // Remove error message after 5 seconds
+        setTimeout(() => {
+          const errorMsg = bundleContainer.querySelector('.bundle-error-message');
+          if (errorMsg) {
+            errorMsg.style.opacity = '0';
+            setTimeout(() => {
+              if (errorMsg.parentNode) {
+                errorMsg.parentNode.removeChild(errorMsg);
+              }
+            }, 300);
+          }
+        }, 5000);
       }
     }
   });

@@ -3,37 +3,34 @@
 {{ 'chatbot.js' | asset_url | script_tag }}
 {{ 'chatbot.css' | asset_url | stylesheet_tag }}
 
-<!-- Button in the section -->
-<section class="edna-button-section">
-  <div id="chatbot-toggle" class="inline-button" style="background-color: {{ section.settings.button_background }};">
-    <div class="button-content">
-      <div class="button-icon">
-        {% if section.settings.button_icon %}
-          <img id="chatbot-open-toggle" src="{{ section.settings.button_icon | img_url: 'small' }}" alt="Edna" loading="lazy">
-        {% else %}
-          <img id="chatbot-open-toggle" src="{{ 'edna_logo.png' | asset_url }}" alt="Edna" loading="lazy">
-        {% endif %}
-      </div>
-      <span class="button-text">{{ section.settings.button_text }}</span>
-    </div>
+<!-- Edna Chatbot Button (stays in section) -->
+<!-- Edna Chatbot Button (stays in section) -->
+<div id="chatbot-toggle" class="compact-style-button" style="background-color: {{ section.settings.button_background }};">
+  <div class="button-icon">
+    {% if section.settings.button_icon %}
+      <img id="chatbot-open-toggle" src="{{ section.settings.button_icon | img_url: 'small' }}" alt="Edna" loading="lazy">
+    {% else %}
+      <img id="chatbot-open-toggle" src="{{ 'edna_logo.png' | asset_url }}" alt="Edna" loading="lazy">
+    {% endif %}
+    <img id="chatbot-close-toggle" class="hidden" src="{{ 'close.png' | asset_url }}" loading="eager">
   </div>
-</section>
+  <span class="button-text">{{ section.settings.button_text | default: "Shop with Edna" }}</span>
+</div>
 
-<!-- Chat window (will be moved to body by JavaScript) -->
+<!-- Chat window will be moved to body via JS -->
 <div id="chatbot-window">
   <div id="chat-header">
     <h2>Edna</h2>
-    <img id="chatbot-close-toggle" src="{{ 'close.png' | asset_url }}" loading="eager">
+    <button id="chatbot-window-close" class="close-window-button">×</button>
   </div>
   <div id="chat">
     <!-- Welcome message will be added by JS -->
   </div>
   <form id="chat-form">
-    <input name="chatInput" autocomplete="off" placeholder="{{ section.settings.input_placeholder }}"/>
+    <input name="chatInput" autocomplete="off" placeholder="{{ section.settings.input_placeholder | default: 'Ask me something...' }}"/>
     <button name="chatButton" type="submit">Send</button>
   </form>
 </div>
-
 
 {% schema %}
 {
@@ -63,9 +60,6 @@
       "label": "Chat input placeholder",
       "default": "Ask me something..."
     }
-  ],
-  "stylesheet": "chatbot.css",
-  "javascript": "chatbot.js"
+  ]
 }
 {% endschema %}
-

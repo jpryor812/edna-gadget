@@ -394,6 +394,24 @@
     animation: fadeIn 0.3s ease-out;
     max-width: 400px;
   }
+
+  .bundle-checkout-btn {
+  display: block;
+  margin-top: 12px;
+  background: #2c6ecb; /* Or your theme's primary color */
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: bold;
+}
+
+.bundle-checkout-link {
+  color: #2c6ecb;
+  text-decoration: underline;
+}
   
   .bundle-success-message a {
     color: #008060;
