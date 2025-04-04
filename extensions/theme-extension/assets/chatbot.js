@@ -25,8 +25,124 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatButton = chatForm.elements.chatButton;
   const chatbotToggle = document.getElementById("chatbot-toggle");
   const chatbotOpenToggle = document.getElementById("chatbot-open-toggle");
-  const chatbotCloseToggle = document.getElementById("chatbot-close-toggle"); // This is missing
+  const chatbotCloseToggle = document.getElementById("chatbot-close-toggle");
   const chatbotWindowClose = document.getElementById("chatbot-window-close");
+  
+  // Voice recognition variables
+  let recognition;
+  let isRecording = false;
+  let micButton;
+
+  // Initialize Web Speech API if available
+  function initSpeechRecognition() {
+    // Check if browser supports SpeechRecognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      
+      // Configure speech recognition
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US'; // Default language
+      
+      // Event handlers for speech recognition
+      recognition.onstart = function() {
+        isRecording = true;
+        micButton.classList.add('recording');
+        chatInput.placeholder = "Listening...";
+      };
+      
+      recognition.onresult = function(event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        
+        // Process the results
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        // Update input field with transcribed text
+        chatInput.value = finalTranscript || interimTranscript;
+      };
+      
+      recognition.onerror = function(event) {
+        console.error('Speech recognition error:', event.error);
+        stopRecording();
+      };
+      
+      recognition.onend = function() {
+        stopRecording();
+      };
+      
+      return true;
+    }
+    
+    console.log('Speech recognition not supported in this browser.');
+    return false;
+  }
+  
+  // Start voice recording
+  function startRecording() {
+    if (recognition) {
+      try {
+        recognition.start();
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+      }
+    }
+  }
+  
+  // Stop voice recording
+  function stopRecording() {
+    if (recognition) {
+      try {
+        recognition.stop();
+        isRecording = false;
+        micButton.classList.remove('recording');
+        chatInput.placeholder = chatInput.getAttribute('data-original-placeholder') || "Ask me something...";
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
+    }
+  }
+  
+  // Add microphone button to the chat form
+  function addMicButton() {
+    // Create the microphone button
+    micButton = document.createElement('button');
+    micButton.type = 'button'; // Prevent form submission
+    micButton.id = 'mic-button';
+    micButton.className = 'mic-button';
+    micButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mic-icon">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    `;
+    
+    // Save original placeholder text
+    chatInput.setAttribute('data-original-placeholder', chatInput.placeholder);
+    
+    // Insert the mic button before the send button
+    chatForm.insertBefore(micButton, chatButton);
+    
+    // Add click event listener
+    micButton.addEventListener('click', function(event) {
+      event.preventDefault();
+      
+      if (!isRecording) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    });
+  }
 
   // IMPORTANT: Move the chatbot window to the document body
   // This ensures it can appear in front of everything
@@ -269,13 +385,27 @@ document.addEventListener("DOMContentLoaded", function () {
   chatForm.addEventListener("submit", async function (event) {
     event.preventDefault();
     
+    // If recording is active, stop it
+    if (isRecording) {
+      stopRecording();
+    }
+    
     // disable input and button
     chatInput.toggleAttribute("disabled");
     chatButton.toggleAttribute("disabled");
+    if (micButton) micButton.toggleAttribute("disabled");
 
     // get user-inputted message
     const chatInputValue = chatInput.value;
     chatInput.value = "";
+
+    // Skip empty messages
+    if (!chatInputValue.trim()) {
+      chatInput.toggleAttribute("disabled");
+      chatButton.toggleAttribute("disabled");
+      if (micButton) micButton.toggleAttribute("disabled");
+      return;
+    }
 
     // add input to chat window and disable input
     const userInput = document.createTextNode(chatInputValue);
@@ -337,6 +467,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (done) {
         chatInput.toggleAttribute("disabled");
         chatButton.toggleAttribute("disabled");
+        if (micButton) micButton.toggleAttribute("disabled");
         chat.removeChild(chatbotThinking);
         
         // Initialize product carousels
@@ -399,12 +530,17 @@ document.addEventListener("DOMContentLoaded", function () {
       chatbotCloseToggle.classList.add("hidden");
     });
   }
-  
-  if (chatbotCloseToggle) {  // Add this check
+
+  if (chatbotCloseToggle) {
     chatbotCloseToggle.addEventListener("click", function() {
       chatbotWindow.classList.remove("visible");
       chatbotOpenToggle.classList.remove("hidden");
       chatbotCloseToggle.classList.add("hidden");
     });
+  }
+  
+  // Initialize speech recognition and add mic button
+  if (initSpeechRecognition()) {
+    addMicButton();
   }
 });

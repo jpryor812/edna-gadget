@@ -58,7 +58,7 @@
 .close-window-button {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1;
   padding: 4px 8px;
   cursor: pointer;
@@ -123,7 +123,7 @@
 
 #chat-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 400;
   font-family: 'baskervville', serif;
   font-style: italic;
@@ -157,7 +157,7 @@
   align-self: flex-start;
   clear: both;
   font-family: 'baskervville', serif;
-  font-size: 16px;                   /* Font size */
+  font-size: 18px;                   /* Font size */
   line-height: 1.75;                  /* Line height */
   color: #555;                       /* Text color */
 }
@@ -174,7 +174,7 @@
   align-self: flex-end;
   clear: both;
   font-family: 'baskervville', serif;
-  font-size: 16px;                   /* Font size */
+  font-size: 18px;                   /* Font size */
   line-height: 1.75;                  /* Line height */
   color: #555;                       /* Text color */
 }
@@ -209,6 +209,7 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
   display: inline-block;
+  font-size: 18px;
 }
 
 #chat-form {
@@ -218,6 +219,7 @@
   background-color: white;
   border-radius: 0 0 16px 16px;
   align-items: center;
+  gap: 10px;
 }
 
 #chat-form > input {
@@ -226,7 +228,7 @@
   border: 1px solid #e0e0e0;
   border-radius: 24px;
   outline: none;
-  font-size: 14px;
+  font-size: 18px;
 }
 
 #chat-form > input:focus {
@@ -237,7 +239,7 @@
 
 #chat-form > button {
   color: white;
-  background: black;
+  background: #4dc94d;
   border: none;
   border-radius: 50%;
   width: 44px;
@@ -247,11 +249,63 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  transition: background-color 0.2s ease;
+  margin-left: 10px;
+}
+
+#chat-form > button:hover {
+  background: green;
 }
 
 #chat-form > button:disabled {
   color: lightgrey;
   background: #aaa;
+}
+
+.send-icon {
+  margin-right: 1px; /* Small adjustment to center visually */
+  margin-top: 1px;
+}
+.mic-button {
+  background-color: white;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.mic-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.mic-button.recording {
+  background-color: rgba(255, 0, 0, 0.1);
+  animation: pulse 1.5s infinite;
+}
+
+.mic-button .mic-icon {
+  color: #4dc94d;
+}
+
+.mic-button.recording .mic-icon {
+  color: #ff3b30;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .hidden {
@@ -324,7 +378,7 @@
     align-self: flex-start;
     clear: both;
     font-family: 'baskervville', serif;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.75;
     color: #555;
     border-radius: 12px 12px 12px 0;
@@ -548,11 +602,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px;
+  padding: 18px;
 }
 .main-product-image-container img {
   max-width: 100%;
-  max-height: 100%;
+  max-height: 95%;
   object-fit: contain;
 }
 
@@ -574,7 +628,7 @@
   font-family: 'baskervville', serif;
 }
 .product-description-text {
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
     color: #333;
     margin-bottom: 16px;
@@ -776,22 +830,24 @@
   font-weight: 600;
   display: block;
   }
-  .bot-welcome-message {
-    padding: 12px;
-    margin: 8px 0;
-    max-width: 80%;
-    border-radius: 12px 12px 12px 0;
-    background-color: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    position: relative;
-    display: inline-block;
-}
 
 /* Mobile layout elements - hidden by default on desktop */
 .mobile-top-section,
 .mobile-description-container,
 .mobile-product-link {
   display: none;
+}
+.follow-up-message{
+  padding: 12px;
+  margin: 8px 0;
+  max-width: 80%;
+  border-radius: 12px 12px 12px 0;
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: inline-block;
+  font-size: 18px;
+  font-family: 'baskervville', serif;
 }
 
 /* Mobile Layout Changes */
@@ -802,6 +858,15 @@
     height: auto;
     max-height: none;
   }
+  .bot-welcome-message {
+    font-size: 16px;
+}
+#chatbot-window > #chat > .bot {
+  font-size: 16px;                   
+}
+.follow-up-message{
+  font-size: 16px;
+}
   
   /* Adjust each column to take full width */
   .main-product-column,
@@ -822,13 +887,21 @@
     max-width: 100%;
     width: 100%;
     height: 200px;
+    padding: 2px;
   }
+  .product-description-text {
+    font-size: 14px;
+  }
+
   
   .main-product-card .product-info {
     width: 100%;
     padding: 8px 12px;
   }
   
+  .complimentary-products-header {
+    font-size: 16px;
+  }
   /* Complementary products horizontal scroll */
   .complementary-products-column {
     height: auto;
@@ -906,7 +979,7 @@
     font-size: 13px;
   }
   .product-link {
-    font-size: 12px;
+    font-size: 14px;
     padding: 6px 16px;
   }
   .main-product-card .product-title {
@@ -921,6 +994,7 @@
 }
   .product-recommendation-intro {
     max-width: 100%;
+    font-size: 16px;
 }
 .compact-style-button {
   padding: 8px 16px 8px 8px;
