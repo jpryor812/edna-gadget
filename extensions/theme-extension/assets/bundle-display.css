@@ -23,7 +23,7 @@
     font-size: 16px;
     font-weight: 600;
     text-align: center;
-    margin: 25px 0 15px;
+    margin: 20px 0 10px;
     font-family: 'baskervville', serif;
     color: #333;
     position: relative;
@@ -52,10 +52,10 @@
   }
   
   .bundle-explanation {
-    margin: 15px 0;
-    font-size: 13px;
+    margin: 35px 0;
+    font-size: 14px;
     line-height: 1.4;
-    color: #555;
+    color: #444;
     text-align: center;
     padding: 0 5px;
     font-family: 'baskervville', serif;
@@ -73,7 +73,7 @@
   
   /* Product catalog */
   .bundle-product-catalog {
-    margin-top: 15px;
+    margin-top: 12px;
   }
   
   .bundle-product-scroll {
@@ -92,6 +92,7 @@
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 10px;
+    padding-bottom: 50px;
     position: relative;
     background-color: white;
     transition: transform 0.2s, box-shadow 0.2s;
@@ -125,7 +126,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     overflow: hidden;
   }
   
@@ -136,7 +137,7 @@
   }
   
   .bundle-product-details {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
   
   .bundle-product-title {
@@ -165,6 +166,10 @@
     font-size: 12px;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
   }
   
   .bundle-add-to-bundle-btn:hover {
@@ -337,8 +342,8 @@
   
   /* Bundle summary */
   .bundle-summary {
-    margin-top: 20px;
-    padding: 15px;
+    margin-top: 12px;
+    padding: 12px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #f9fafb;
@@ -350,7 +355,7 @@
   .bundle-summary-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-size: 14px;
   }
   
@@ -423,9 +428,141 @@
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  .bundle-category-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 16px;
+    align-items: center;
+  }
   
-  /* Responsive design */
-  @media (min-width: 768px) {
+  .bundle-filter-label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  
+  .bundle-category-btn {
+    background: #f6f6f6;
+    border: 1px solid #e1e3e5;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .bundle-category-btn:hover {
+    background: #eaeaea;
+  }
+  
+  .bundle-category-btn.active {
+    background: #5c6ac4;
+    color: white;
+    border-color: #5c6ac4;
+  }
+  /* Pagination styles */
+.bundle-pagination {
+    margin: 20px 0 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .bundle-pagination-info {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .bundle-pagination-controls {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .bundle-pagination-btn {
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+  
+  .bundle-pagination-btn:hover:not(:disabled) {
+    background: #eee;
+  }
+  
+  .bundle-pagination-btn.active {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+    cursor: default;
+  }
+  
+  .bundle-pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .bundle-loading-pagination {
+    text-align: center;
+    padding: 10px;
+    color: #666;
+    font-style: italic;
+  }  
+  .bundle-size-selector {
+    margin: 8px 0;
+    padding: 0 5px;
+  }
+  
+  .bundle-size-label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #666;
+  }
+  
+  .bundle-size-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  
+  .bundle-size-option {
+    padding: 5px 12px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 30px;
+    text-align: center;
+  }
+  
+  .bundle-size-option.selected {
+    background: #f0f0f0;
+    border-color: #999;
+    font-weight: bold;
+  }
+  
+  .bundle-size-option:hover {
+    border-color: #999;
+  }
+  
+  /* Responsive adjustments for small screens */
+  @media (max-width: 768px) {
+    .bundle-category-filter {
+      padding-bottom: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
     .bundle-slots-container {
       flex-wrap: nowrap;
       overflow-x: auto;
