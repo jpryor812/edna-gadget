@@ -18,11 +18,6 @@ document.addEventListener("DOMContentLoaded", function() {
       return;
     }
 
-    let currentPage = 1;
-    let perPage = 40;
-    let totalPages = 1;
-    let totalProducts = 0;
-
     gadgetApi = new Gadget();
     
     // Start loading all the necessary data
@@ -32,72 +27,36 @@ document.addEventListener("DOMContentLoaded", function() {
      * Initialize the bundle display by fetching all required data
      */
     async function initializeBundleDisplay() {
-        try {
-          // 1. Fetch bundle discount configuration
-          const bundleConfigPromise = fetchBundleConfig();
-          
-          // 2. Fetch product recommendations
-          const recommendationsPromise = fetchProductRecommendations();
-          
-          // 3. Fetch additional store products 
-          const storeProductsPromise = fetchStoreProducts(1);
-          
-          // 4. Wait for all promises to resolve
-          const [bundleConfig, recommendations, storeProductsData] = await Promise.all([
-            bundleConfigPromise,
-            recommendationsPromise,
-            storeProductsPromise
-          ]);
-          
-          // Get the actual store products array from the response
-          const storeProducts = storeProductsData.products || [];
-          
-          // Update pagination if provided
-          if (storeProductsData.pagination) {
-            currentPage = storeProductsData.pagination.currentPage;
-            totalPages = storeProductsData.pagination.totalPages;
-            totalProducts = storeProductsData.pagination.totalCount;
-          }
-          
-          console.log("Bundle config:", bundleConfig);
-          console.log("Recommendations:", recommendations);
-          console.log("Store products:", storeProducts);
-          console.log("Pagination:", { currentPage, totalPages, totalProducts });
-          
-          // 5. Combine recommendations and store products, removing duplicates
-          // Note: We're now working with IDs that have both product and variant info
-          const recommendationIds = new Set();
-          recommendations.forEach(p => {
-            if (p.productId) {
-              recommendationIds.add(p.productId);
-            } else if (p.id && p.id.includes('-')) {
-              recommendationIds.add(p.id.split('-')[0]);
-            }
-          });
-          
-          const filteredStoreProducts = storeProducts.filter(p => {
-            const productPartOfId = p.productId || (p.id && p.id.includes('-') ? p.id.split('-')[0] : p.id);
-            return !recommendationIds.has(productPartOfId);
-          });
-          
-          // 6. Create combined product list with recommendations first
-          const allProducts = [
-            ...recommendations.map(p => ({ ...p, isRecommended: true })),
-            ...filteredStoreProducts.map(p => ({ ...p, isRecommended: false }))
-          ];
-          
-          console.log("Combined products:", allProducts.length);
-          
-          // 7. Render the bundle display with all the data
-          renderBundleDisplay(bundleConfig, allProducts);
-        } catch (error) {
-          console.error("Failed to initialize bundle display:", error);
-          const loadingElement = bundleContainer.querySelector('.bundle-loading');
-          if (loadingElement) {
-            loadingElement.innerHTML = 'Could not load bundle information';
-          }
+      try {
+        // 1. Fetch bundle discount configuration
+        const bundleConfigPromise = fetchBundleConfig();
+        
+        // 2. Fetch store products
+        const storeProductsPromise = fetchStoreProducts();
+        
+        // 3. Wait for all promises to resolve
+        const [bundleConfig, storeProductsResponse] = await Promise.all([
+          bundleConfigPromise,
+          storeProductsPromise
+        ]);
+        
+        // Extract products from the response object
+        const storeProducts = storeProductsResponse.products || [];
+        
+        console.log("Bundle config:", bundleConfig);
+        console.log("Store products:", storeProducts);
+        
+        // 4. Render the bundle display with all the data
+        renderBundleDisplay(bundleConfig, storeProducts);
+      } catch (error) {
+        console.error("Failed to initialize bundle display:", error);
+        const loadingElement = bundleContainer.querySelector('.bundle-loading');
+        if (loadingElement) {
+          loadingElement.innerHTML = 'Could not load bundle information';
         }
-      }      
+      }
+    }
+    
     
     /**
      * Fetch bundle configuration from the Gadget API
@@ -149,34 +108,23 @@ document.addEventListener("DOMContentLoaded", function() {
     /**
      * Fetch additional store products from the Gadget API
      */
-    async function fetchStoreProducts(page = 1) {
-        try {
-          // Make request to bundle-config endpoint with type=products and pagination
-          const response = await gadgetApi.fetch(
-            `/bundle-config?type=products&productId=${currentProductId}&shop=${shopDomain}&page=${page}&perPage=${perPage}`
-          );
-          
-          if (!response.ok) {
-            throw new Error(`Failed to fetch store products: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          
-          // Update pagination state if pagination info is provided
-          if (data.pagination) {
-            currentPage = data.pagination.currentPage;
-            totalPages = data.pagination.totalPages;
-            totalProducts = data.pagination.totalCount;
-          }
-          
-          // Return products array or empty array
-          return data.products || [];
-        } catch (error) {
-          console.error("Error fetching store products:", error);
-          return []; // Return empty array on error
+    async function fetchStoreProducts() {
+      try {
+        // Make request to bundle-config endpoint with type=products
+        const response = await gadgetApi.fetch(
+          `/bundle-config?type=products&productId=${currentProductId}&shop=${shopDomain}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch store products: ${response.status}`);
         }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Error fetching store products:", error);
+        return []; // Return empty array on error
       }
-      
+    }
     
     /**
      * Ensure a price value is a number
@@ -227,7 +175,7 @@ document.addEventListener("DOMContentLoaded", function() {
       if (hasDiscounts) {
         const explanationElement = document.createElement('div');
         explanationElement.className = 'bundle-explanation';
-        explanationElement.textContent = 'Add items to your bundle and save the percentages shown above on each additional item! Feel free to browse around to find more items, but make sure you build your cart in this bundle section to recognize the discounts.';
+        explanationElement.textContent = 'Add items to your bundle and save the percentages shown above on each additional item!';
         bundleContainer.appendChild(explanationElement);
       }
       
@@ -291,7 +239,6 @@ document.addEventListener("DOMContentLoaded", function() {
       bundleContainer.appendChild(summaryElement);
       
       // Create product catalog section
-
       if (complementaryProducts && complementaryProducts.length > 0) {
         const catalogSection = document.createElement('div');
         catalogSection.className = 'bundle-product-catalog';
@@ -301,68 +248,13 @@ document.addEventListener("DOMContentLoaded", function() {
         catalogHeader.textContent = 'Complete Your Bundle';
         catalogSection.appendChild(catalogHeader);
         
-        // ADD CATEGORY FILTERING - Extract unique product types
-        const productTypes = [];
-        const productTypesMap = {};
-        
-        
-        complementaryProducts.forEach(product => {
-          // Get product type from product, defaulting to "Uncategorized" if not available
-          const productType = product.productType || "Uncategorized";
-          if (!productTypesMap[productType]) {
-            productTypesMap[productType] = true;
-            productTypes.push(productType);
-          }
-        });
-        
-        // Sort product types alphabetically
-        productTypes.sort();
-        
-        // Create category filter container
-        const categoryFilterContainer = document.createElement('div');
-        categoryFilterContainer.className = 'bundle-category-filter';
-        
-        // Add filter label
-        const filterLabel = document.createElement('span');
-        filterLabel.className = 'bundle-filter-label';
-        filterLabel.textContent = 'Filter by category: ';
-        categoryFilterContainer.appendChild(filterLabel);
-        
-        // Create "All" button (active by default)
-        const allButton = document.createElement('button');
-        allButton.className = 'bundle-category-btn active';
-        allButton.setAttribute('data-category', 'all');
-        allButton.textContent = 'All';
-        allButton.addEventListener('click', filterProductsByCategory);
-        categoryFilterContainer.appendChild(allButton);
-        
-        // Create button for each product type
-        productTypes.forEach(type => {
-          const button = document.createElement('button');
-          button.className = 'bundle-category-btn';
-          button.setAttribute('data-category', type);
-          button.textContent = type;
-          button.addEventListener('click', filterProductsByCategory);
-          categoryFilterContainer.appendChild(button);
-        });
-        
-        // Add category filter to catalog section
-        if (productTypes.length > 0) {
-          catalogSection.appendChild(categoryFilterContainer);
-        }
-        
         const productScroll = document.createElement('div');
         productScroll.className = 'bundle-product-scroll';
-        productScroll.id = 'bundle-product-scroll';
         
-        // Process and add each complementary product
+        // Process and add each complementary product (showing all products)
         complementaryProducts.forEach((product, index) => {
           try {
             const productCard = createProductCard(product, index);
-            
-            // Add product type as a data attribute for filtering
-            productCard.setAttribute('data-product-type', product.productType || 'Uncategorized');
-            
             productScroll.appendChild(productCard);
           } catch (error) {
             console.error("Error creating product card:", error, product);
@@ -370,345 +262,75 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         
         catalogSection.appendChild(productScroll);
-        
-        // Add pagination
-        const paginationElement = createPagination(currentPage, totalPages);
-        catalogSection.appendChild(paginationElement);
-        
         bundleContainer.appendChild(catalogSection);
       }
     }
-
-    /**
- * Create a pagination element
- */
-function createPagination(currentPage, totalPages) {
-    const paginationContainer = document.createElement('div');
-    paginationContainer.className = 'bundle-pagination';
-    
-    // Only show pagination if we have more than one page
-    if (totalPages <= 1) return paginationContainer;
-    
-    // Add pagination info
-    const paginationInfo = document.createElement('div');
-    paginationInfo.className = 'bundle-pagination-info';
-    paginationInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-    paginationContainer.appendChild(paginationInfo);
-    
-    // Add pagination controls
-    const paginationControls = document.createElement('div');
-    paginationControls.className = 'bundle-pagination-controls';
-    
-    // Previous button
-    const prevButton = document.createElement('button');
-    prevButton.className = 'bundle-pagination-btn prev';
-    prevButton.textContent = '« Previous';
-    prevButton.disabled = currentPage <= 1;
-    if (currentPage > 1) {
-      prevButton.addEventListener('click', () => changePage(currentPage - 1));
-    }
-    paginationControls.appendChild(prevButton);
-    
-    // Page numbers
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, startPage + 4);
-    
-    for (let i = startPage; i <= endPage; i++) {
-      const pageButton = document.createElement('button');
-      pageButton.className = `bundle-pagination-btn page ${i === currentPage ? 'active' : ''}`;
-      pageButton.textContent = i.toString();
-      
-      if (i !== currentPage) {
-        pageButton.addEventListener('click', () => changePage(i));
-      }
-      
-      paginationControls.appendChild(pageButton);
-    }
-    
-    // Next button
-    const nextButton = document.createElement('button');
-    nextButton.className = 'bundle-pagination-btn next';
-    nextButton.textContent = 'Next »';
-    nextButton.disabled = currentPage >= totalPages;
-    if (currentPage < totalPages) {
-      nextButton.addEventListener('click', () => changePage(currentPage + 1));
-    }
-    paginationControls.appendChild(nextButton);
-    
-    paginationContainer.appendChild(paginationControls);
-    return paginationContainer;
-  }
-
-  /**
- * Change the current page
- */
-async function changePage(pageNum) {
-    try {
-      // Show loading state
-      const catalogSection = document.querySelector('.bundle-product-catalog');
-      if (!catalogSection) return;
-      
-      // Add or update loading indicator
-      let loadingElement = catalogSection.querySelector('.bundle-loading-pagination');
-      if (!loadingElement) {
-        loadingElement = document.createElement('div');
-        loadingElement.className = 'bundle-loading-pagination';
-        loadingElement.textContent = 'Loading products...';
-        catalogSection.appendChild(loadingElement);
-      }
-      
-      // Disable pagination buttons
-      const paginationButtons = document.querySelectorAll('.bundle-pagination-btn');
-      paginationButtons.forEach(btn => btn.disabled = true);
-      
-      // Fetch products for new page
-      const products = await fetchStoreProducts(pageNum);
-      
-      // Get current active category
-      const activeCategory = document.querySelector('.bundle-category-btn.active')?.getAttribute('data-category') || 'all';
-      
-      // Get product scroll container
-      const productScroll = document.getElementById('bundle-product-scroll');
-      if (productScroll) {
-        // Clear existing products
-        productScroll.innerHTML = '';
-        
-        // Add new products
-        products.forEach((product, index) => {
-          try {
-            const productCard = createProductCard(product, index);
-            
-            // Add product type for filtering
-            const productType = product.productType || 'Uncategorized';
-            productCard.setAttribute('data-product-type', productType);
-            
-            // Hide if doesn't match active filter
-            if (activeCategory !== 'all' && productType !== activeCategory) {
-              productCard.style.display = 'none';
-            }
-            
-            productScroll.appendChild(productCard);
-          } catch (error) {
-            console.error("Error creating product card:", error, product);
-          }
-        });
-      }
-      
-      // Update pagination
-      const oldPagination = catalogSection.querySelector('.bundle-pagination');
-      if (oldPagination) {
-        const newPagination = createPagination(currentPage, totalPages);
-        catalogSection.replaceChild(newPagination, oldPagination);
-      }
-      
-      // Remove loading indicator
-      if (loadingElement && loadingElement.parentNode) {
-        loadingElement.parentNode.removeChild(loadingElement);
-      }
-      
-      // Scroll back to top of catalog
-      if (catalogSection) {
-        catalogSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    } catch (error) {
-      console.error('Error changing page:', error);
-      
-      // Show error message
-      const catalogSection = document.querySelector('.bundle-product-catalog');
-      if (catalogSection) {
-        const errorElement = document.createElement('div');
-        errorElement.className = 'bundle-error-message';
-        errorElement.textContent = 'Error loading products. Please try again.';
-        catalogSection.appendChild(errorElement);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-          if (errorElement.parentNode) {
-            errorElement.parentNode.removeChild(errorElement);
-          }
-        }, 3000);
-      }
-      
-      // Re-enable pagination buttons
-      const paginationButtons = document.querySelectorAll('.bundle-pagination-btn');
-      paginationButtons.forEach(btn => btn.disabled = false);
-    }
-  }  
     
     /**
-     * Filter products by category
+     * Create a product card for the catalog
      */
-    function filterProductsByCategory(event) {
-      // Get the selected category
-      const category = event.target.getAttribute('data-category');
+    function createProductCard(product, index) {
+      const card = document.createElement('div');
+      card.className = 'bundle-product-card';
+      card.setAttribute('data-product-id', product.id);
+      card.setAttribute('data-variant-id', product.id.split('/').pop());
       
-      // Update active button
-      const categoryButtons = document.querySelectorAll('.bundle-category-btn');
-      categoryButtons.forEach(button => {
-        if (button === event.target) {
-          button.classList.add('active');
-        } else {
-          button.classList.remove('active');
-        }
-      });
+      // Ensure we have a numeric price
+      const numericPrice = ensureNumericPrice(product.price);
+      card.setAttribute('data-price', numericPrice);
+      card.setAttribute('data-index', index);
       
-      // Get all product cards
-      const productCards = document.querySelectorAll('.bundle-product-card');
-      
-      // Apply filtering
-      productCards.forEach(card => {
-        const cardProductType = card.getAttribute('data-product-type');
+      // Check if this is a recommended product
+      if (product.isRecommended || product.recommendationText) {
+        card.classList.add('recommended');
         
-        if (category === 'all' || cardProductType === category) {
-          // Show the card if it matches the category or if 'all' is selected
-          card.style.display = '';
-        } else {
-          // Hide the card if it doesn't match
-          card.style.display = 'none';
-        }
-      });
-    }
-    
-    /**
- * Create a product card for the catalog
- */
-function createProductCard(product, index) {
-    const card = document.createElement('div');
-    card.className = 'bundle-product-card';
-    card.setAttribute('data-product-id', product.id);
-    card.setAttribute('data-variant-id', product.variantId);
-    
-    // Set product type for filtering
-    if (product.productType) {
-      card.setAttribute('data-product-type', product.productType);
-    }
-    
-    // Ensure we have a numeric price
-    const numericPrice = ensureNumericPrice(product.price);
-    card.setAttribute('data-price', numericPrice);
-    card.setAttribute('data-index', index);
-    
-    // Check if this is a recommended product
-    if (product.isRecommended || product.recommendationText) {
-      card.classList.add('recommended');
-      
-      const badge = document.createElement('div');
-      badge.className = 'recommended-badge';
-      badge.textContent = 'Recommended';
-      card.appendChild(badge);
-    }
-    
-    // Product image
-    const imageContainer = document.createElement('div');
-    imageContainer.className = 'bundle-product-image';
-    
-    if (product.image) {
-      const img = document.createElement('img');
-      img.src = product.image;
-      img.alt = product.title;
-      imageContainer.appendChild(img);
-    } else {
-      imageContainer.textContent = 'No Image';
-    }
-    
-    card.appendChild(imageContainer);
-    
-    // Product details
-    const details = document.createElement('div');
-    details.className = 'bundle-product-details';
-    
-    const title = document.createElement('h5');
-    title.className = 'bundle-product-title';
-    title.textContent = product.title;
-    details.appendChild(title);
-    
-    const price = document.createElement('p');
-    price.className = 'bundle-product-price';
-    price.textContent = `$${numericPrice.toFixed(2)}`;
-    details.appendChild(price);
-    
-    card.appendChild(details);
-    
-    // Check if product has size options
-    if (product.hasSizeOptions && product.sizeOption) {
-      const sizeSelector = document.createElement('div');
-      sizeSelector.className = 'bundle-size-selector';
-      
-      // Size selector label
-      const sizeLabel = document.createElement('label');
-      sizeLabel.className = 'bundle-size-label';
-      sizeLabel.textContent = product.sizeOption.name + ':';
-      sizeSelector.appendChild(sizeLabel);
-      
-      // Size options container
-      const sizeOptions = document.createElement('div');
-      sizeOptions.className = 'bundle-size-options';
-      
-      // Create a button for each size option
-      product.sizeOption.values.forEach(option => {
-        const sizeBtn = document.createElement('button');
-        sizeBtn.className = 'bundle-size-option';
-        sizeBtn.setAttribute('data-variant-id', option.variantId);
-        sizeBtn.setAttribute('data-value', option.value);
-        sizeBtn.textContent = option.value;
-        
-        // Mark the default selected size
-        if (option.variantId === product.variantId) {
-          sizeBtn.classList.add('selected');
-        }
-        
-        // Add event listener to select this size
-        sizeBtn.addEventListener('click', (e) => {
-          // Update selected class
-          sizeOptions.querySelectorAll('.bundle-size-option').forEach(btn => {
-            btn.classList.remove('selected');
-          });
-          sizeBtn.classList.add('selected');
-          
-          // Update variant ID on the card
-          card.setAttribute('data-variant-id', option.variantId);
-          
-          // Update price if different
-          if (option.price && option.price !== numericPrice) {
-            price.textContent = `$${option.price.toFixed(2)}`;
-            card.setAttribute('data-price', option.price);
-          }
-          
-          e.preventDefault(); // Prevent the event from bubbling up
-        });
-        
-        sizeOptions.appendChild(sizeBtn);
-      });
-      
-      sizeSelector.appendChild(sizeOptions);
-      card.appendChild(sizeSelector);
-    }
-    
-    // Add to bundle button
-    const button = document.createElement('button');
-    button.className = 'bundle-add-to-bundle-btn';
-    button.textContent = 'Add to Bundle';
-    button.addEventListener('click', () => {
-      // Get the currently selected size variant if applicable
-      const selectedSize = card.querySelector('.bundle-size-option.selected');
-      if (selectedSize) {
-        const selectedVariantId = selectedSize.getAttribute('data-variant-id');
-        const updatedProduct = {
-          ...product,
-          variantId: selectedVariantId,
-          // Update price if needed
-          price: parseFloat(card.getAttribute('data-price'))
-        };
-        addProductToBundle(updatedProduct);
-      } else {
-        addProductToBundle(product);
+        const badge = document.createElement('div');
+        badge.className = 'recommended-badge';
+        badge.textContent = 'Recommended';
+        card.appendChild(badge);
       }
-    });
-    
-    card.appendChild(button);
-    
-    return card;
-  }  
+      
+      // Product image
+      const imageContainer = document.createElement('div');
+      imageContainer.className = 'bundle-product-image';
+      
+      if (product.image) {
+        const img = document.createElement('img');
+        img.src = product.image;
+        img.alt = product.title;
+        imageContainer.appendChild(img);
+      } else {
+        imageContainer.textContent = 'No Image';
+      }
+      
+      card.appendChild(imageContainer);
+      
+      // Product details
+      const details = document.createElement('div');
+      details.className = 'bundle-product-details';
+      
+      const title = document.createElement('h5');
+      title.className = 'bundle-product-title';
+      title.textContent = product.title;
+      details.appendChild(title);
+      
+      const price = document.createElement('p');
+      price.className = 'bundle-product-price';
+      price.textContent = `$${numericPrice.toFixed(2)}`;
+      details.appendChild(price);
+      
+      card.appendChild(details);
+      
+      // Add to bundle button
+      const button = document.createElement('button');
+      button.className = 'bundle-add-to-bundle-btn';
+      button.textContent = 'Add to Bundle';
+      button.addEventListener('click', () => addProductToBundle(product));
+      
+      card.appendChild(button);
+      
+      return card;
+    }
     
     /**
      * Create a product slot for the selected products
@@ -955,68 +577,57 @@ function createProductCard(product, index) {
       return summary;
     }
     
-/**
- * Add a product to the bundle
- */
-function addProductToBundle(product) {
-    // Ensure we have a product object
-    if (!product) {
-      console.error("Cannot add null product to bundle");
-      return;
-    }
-    
-    // Find the first empty slot
-    const slots = bundleContainer.querySelectorAll('.bundle-product-slot:not(.main-product)');
-    let targetSlot = null;
-    
-    for (let i = 0; i < slots.length; i++) {
-      if (slots[i].querySelector('.bundle-slot-content.empty')) {
-        targetSlot = slots[i];
-        break;
+    /**
+     * Add a product to the bundle
+     */
+    function addProductToBundle(product) {
+      // Ensure we have a product object
+      if (!product) {
+        console.error("Cannot add null product to bundle");
+        return;
       }
-    }
-    
-    if (!targetSlot) {
-      console.warn('No empty slots available');
-      return;
-    }
-    
-    // Get slot index
-    const slotIndex = parseInt(targetSlot.getAttribute('data-slot-index'));
-    
-    // Get bundle configuration
-    const bundleConfig = getBundleConfigFromDOM();
-    
-    // Process price to ensure it's a number
-    const productCopy = {...product};
-    productCopy.price = ensureNumericPrice(product.price);
-    
-    // Get variant ID
-    // First look for variant ID directly on the object
-    if (!productCopy.variantId) {
-      // For backward compatibility, try extracting from product ID
-      if (productCopy.id) {
-        // Check if ID has a variant part (for new format product IDs)
-        if (productCopy.id.includes('-')) {
-          productCopy.variantId = productCopy.id.split('-')[1];
-        } else {
-          productCopy.variantId = productCopy.id.split('/').pop();
+      
+      // Find the first empty slot
+      const slots = bundleContainer.querySelectorAll('.bundle-product-slot:not(.main-product)');
+      let targetSlot = null;
+      
+      for (let i = 0; i < slots.length; i++) {
+        if (slots[i].querySelector('.bundle-slot-content.empty')) {
+          targetSlot = slots[i];
+          break;
         }
       }
+      
+      if (!targetSlot) {
+        console.warn('No empty slots available');
+        return;
+      }
+      
+      // Get slot index
+      const slotIndex = parseInt(targetSlot.getAttribute('data-slot-index'));
+      
+      // Get bundle configuration
+      const bundleConfig = getBundleConfigFromDOM();
+      
+      // Process price to ensure it's a number
+      const productCopy = {...product};
+      productCopy.price = ensureNumericPrice(product.price);
+      
+      // Get variant ID if we don't have one
+      if (!productCopy.variantId && productCopy.id) {
+        productCopy.variantId = productCopy.id.split('/').pop();
+      }
+      
+      // Replace the empty slot with product
+      const newSlot = createProductSlot(productCopy, slotIndex, targetSlot.querySelector('.bundle-slot-title').textContent, bundleConfig);
+      targetSlot.parentNode.replaceChild(newSlot, targetSlot);
+      
+      // Update the add button state for this product
+      updateAddButtonState(product.id);
+      
+      // Update bundle summary
+      updateBundleSummary();
     }
-    
-    // Replace the empty slot with product
-    const newSlot = createProductSlot(productCopy, slotIndex, targetSlot.querySelector('.bundle-slot-title').textContent, bundleConfig);
-    targetSlot.parentNode.replaceChild(newSlot, targetSlot);
-    
-    // Update the add button state for this product
-    // Use the primary product ID (without variant suffix)
-    const primaryProductId = productCopy.productId || productCopy.id.split('-')[0];
-    updateAddButtonState(primaryProductId);
-    
-    // Update bundle summary
-    updateBundleSummary();
-  }  
     
     /**
      * Remove a product from the bundle
@@ -1048,33 +659,25 @@ function addProductToBundle(product) {
       updateBundleSummary();
     }
     
-/**
- * Update the add button state for a product
- */
-function updateAddButtonState(productId, enableButton = false) {
-    // Handle both old and new product ID formats
-    // First try exact match
-    let productCards = bundleContainer.querySelectorAll(`.bundle-product-card[data-product-id="${productId}"]`);
-    
-    // If no exact matches and the ID might be in the new format (contains productId and variantId)
-    if (productCards.length === 0 && productId.includes('-')) {
-      const primaryProductId = productId.split('-')[0];
-      productCards = bundleContainer.querySelectorAll(`.bundle-product-card[data-product-id^="${primaryProductId}"]`);
-    }
-    
-    productCards.forEach(card => {
-      const button = card.querySelector('.bundle-add-to-bundle-btn');
-      if (button) {
-        if (enableButton) {
-          button.textContent = 'Add to Bundle';
-          button.disabled = false;
-        } else {
-          button.textContent = 'Added to Bundle';
-          button.disabled = true;
+    /**
+     * Update the add button state for a product
+     */
+    function updateAddButtonState(productId, enableButton = false) {
+      const productCards = bundleContainer.querySelectorAll(`.bundle-product-card[data-product-id="${productId}"]`);
+      
+      productCards.forEach(card => {
+        const button = card.querySelector('.bundle-add-to-bundle-btn');
+        if (button) {
+          if (enableButton) {
+            button.textContent = 'Add to Bundle';
+            button.disabled = false;
+          } else {
+            button.textContent = 'Added to Bundle';
+            button.disabled = true;
+          }
         }
-      }
-    });
-  }  
+      });
+    }
     
     /**
      * Update the bundle summary with current selections
